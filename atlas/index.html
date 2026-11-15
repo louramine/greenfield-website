@@ -6,86 +6,71 @@
 <meta name="theme-color" content="#0a1410">
 <title>Greenfield Atlas, mode découverte</title>
 <meta name="description" content="Greenfield Atlas : découvrez les terrains disponibles en mode découverte. Prenez rendez-vous pour les terrains off-market.">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<style>
-body{margin:0}
-body{background:#0e1f17}
-body{color:#e8f2ea}
-body{font-family:'Inter Tight',system-ui,sans-serif}
-.atlas{max-width:1080px}
-.atlas{margin:0 auto}
-.atlas{padding:32px 20px 48px}
-.atlas-entete{margin-bottom:20px}
-.marque{font-family:'Archivo',sans-serif}
-.marque{font-weight:900}
-.marque{font-size:28px}
-.marque{color:#7ee0a4}
-.marque{letter-spacing:-.02em}
-.slogan{font-size:12px}
-.slogan{letter-spacing:.14em}
-.slogan{color:#c8e6d3}
-.slogan{margin-top:4px}
-h2{font-family:'Archivo',sans-serif}
-h2{font-weight:900}
-h2{font-size:30px}
-h2{margin:18px 0 4px}
-.mode{color:#7ee0a4}
-.mode{margin:0}
-.mention{font-size:17px}
-.mention{line-height:1.5}
-.mention{max-width:640px}
-.mention{margin:8px 0 14px}
-.bouton{display:inline-block}
-.bouton{background:#2d9e5f}
-.bouton{color:#071a0f}
-.bouton{font-weight:700}
-.bouton{padding:12px 20px}
-.bouton{border-radius:6px}
-.bouton{text-decoration:none}
-#atlas-compte{color:#c8e6d3}
-#atlas-compte{margin:22px 0 10px}
-.carte{height:520px}
-.carte{width:100%}
-.carte{border-radius:8px}
-.carte{overflow:hidden}
-.liste{list-style:none}
-.liste{padding:0}
-.liste{margin:16px 0 0}
-.liste{display:grid}
-.liste{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-.liste{gap:10px}
-.liste li{background:#f4f9f5}
-.liste li{color:#0a1410}
-.liste li{padding:12px 14px}
-.liste li{border-radius:6px}
-.liste li{font-size:14px}
-.liste li{line-height:1.45}
-.note{font-size:12px}
-.note{color:#9fb8a8}
-.note{margin-top:18px}
-.pop{font-size:13px}
-.pop{line-height:1.45}
-@media (max-width:640px){.marque{font-size:24px}}
-@media (max-width:640px){h2{font-size:26px}}
-@media (max-width:640px){.carte{height:400px}}
-</style>
+<link rel="stylesheet" href="atlas.css">
 </head>
 <body>
 <section class="atlas" id="atlas">
-  <header class="atlas-entete">
-    <div class="marque">GREENFIELD<sup>+</sup></div>
-    <div class="slogan">ATLAS · EXIGEZ PLUS</div>
-    <h2>Greenfield Atlas</h2>
-    <p class="mode">Mode découverte</p>
+  <header class="entete">
+    <img class="logo" src="logo-greenfield.png" alt="Greenfield, exigez plus">
+    <div class="titre">
+      <h1>Greenfield Atlas</h1>
+      <p>Mode découverte</p>
+    </div>
   </header>
 
-  <p class="mention">Prenez rendez-vous pour découvrir les terrains off-market pour votre prochain projet.</p>
-  <a class="bouton" href="#contact">Prendre rendez-vous</a>
+  <div class="gf" id="gf" data-vue="carte">
+    <div class="barre">
+      <label class="recherche">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="recherche" type="search" placeholder="Rechercher un quartier ou une référence" aria-label="Rechercher un quartier ou une référence">
+      </label>
+      <div class="filtres">
+        <button class="fp" data-p="prix" type="button">Prix</button>
+        <button class="fp" data-p="surface" type="button">Superficie</button>
+        <button class="fp" data-p="zones" type="button">Zones</button>
+        <button class="fp" data-p="zonage" type="button">Zonage</button>
+        <button class="fr" id="reinit" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Réinitialiser
+        </button>
+      </div>
+      <div class="droite">
+        <button class="fs" id="plein" type="button" aria-label="Plein écran">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        </button>
+        <div class="vue" role="group" aria-label="Affichage">
+          <button type="button" data-mode="carte" class="actif">Carte</button>
+          <button type="button" data-mode="deux">Les deux</button>
+          <button type="button" data-mode="liste">Liste</button>
+        </div>
+      </div>
+    </div>
 
-  <p id="atlas-compte">Chargement de la carte…</p>
-  <div id="atlas-map" class="carte" role="region" aria-label="Carte des terrains en mode découverte"></div>
-  <ul id="atlas-liste" class="liste"></ul>
+    <div class="pop" id="pop" hidden></div>
+
+    <div class="corps">
+      <div id="carte" class="carte" role="region" aria-label="Carte des terrains en mode découverte"></div>
+      <div class="liste" id="liste"></div>
+    </div>
+
+    <button class="fond" id="fond" type="button">Plan</button>
+
+    <div class="pied">
+      <span class="compte" id="compte">Chargement de la carte…</span>
+      <a class="bouton" href="#contact">Prendre rendez-vous</a>
+    </div>
+
+    <div class="voile" id="voile" hidden>
+      <div class="modale" role="dialog" aria-modal="true" aria-labelledby="modale-texte">
+        <img src="logo-greenfield.png" alt="Greenfield">
+        <p id="modale-texte">Prenez rendez-vous pour découvrir les terrains off-market pour votre prochain projet.</p>
+        <a class="bouton" href="#contact">Prendre rendez-vous</a>
+        <button class="lien" id="fermer" type="button">Fermer</button>
+      </div>
+    </div>
+  </div>
 
   <p class="note">Localisation et forme volontairement approximatives. Superficie et prix indiqués en fourchette. Les détails sont communiqués après engagement de confidentialité. Document non contractuel.</p>
 </section>

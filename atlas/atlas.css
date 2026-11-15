@@ -1,0 +1,290 @@
+/* Greenfield Atlas, charte du site : fond vert profond, menthe pour l'action, papier pour les panneaux.
+   Une seule déclaration par règle, pour rester sans point-virgule dans les fichiers. */
+body{margin:0}
+body{background:#0e1f17}
+body{color:#e8f2ea}
+body{font-family:'Inter Tight',system-ui,sans-serif}
+.atlas{max-width:1280px}
+.atlas{margin:0 auto}
+.atlas{padding:28px 20px 48px}
+.entete{display:flex}
+.entete{align-items:center}
+.entete{gap:18px}
+.entete{margin-bottom:18px}
+.logo{height:34px}
+.logo{width:auto}
+h1{font-family:'Archivo',sans-serif}
+h1{font-weight:900}
+h1{font-size:26px}
+h1{margin:0}
+h1{text-transform:uppercase}
+h1{letter-spacing:-.02em}
+.titre p{margin:4px 0 0}
+.titre p{font-size:14px}
+.titre p{color:#9cb3a3}
+
+/* Cadre de la carte */
+.gf{position:relative}
+.gf{height:640px}
+.gf{border-radius:18px}
+.gf{overflow:hidden}
+.gf{background:#0a1410}
+.gf{border:1px solid rgba(126,224,164,.14)}
+.corps{position:absolute}
+.corps{inset:0}
+.corps{display:flex}
+.carte{flex:1}
+.carte{min-width:0}
+.carte{height:100%}
+.liste{display:none}
+.liste{width:360px}
+.liste{overflow-y:auto}
+.liste{background:#f4f9f5}
+.liste{color:#0a1410}
+.liste{padding:76px 12px 12px}
+.gf[data-vue="deux"] .liste{display:block}
+.gf[data-vue="liste"] .liste{display:block}
+.gf[data-vue="liste"] .liste{width:100%}
+.gf[data-vue="liste"] .carte{display:none}
+
+/* Barre d'outils */
+.barre{position:absolute}
+.barre{top:12px}
+.barre{left:12px}
+.barre{right:12px}
+.barre{z-index:1000}
+.barre{display:flex}
+.barre{flex-wrap:wrap}
+.barre{gap:8px}
+.barre{align-items:center}
+.barre{pointer-events:none}
+.barre>*{pointer-events:auto}
+.recherche{display:flex}
+.recherche{align-items:center}
+.recherche{gap:8px}
+.recherche{background:rgba(10,20,16,.92)}
+.recherche{border:1px solid rgba(126,224,164,.28)}
+.recherche{border-radius:999px}
+.recherche{padding:0 14px}
+.recherche{height:40px}
+.recherche{width:300px}
+.recherche{max-width:100%}
+.recherche{color:#9cb3a3}
+.recherche input{background:none}
+.recherche input{border:none}
+.recherche input{outline:none}
+.recherche input{color:#e8f2ea}
+.recherche input{font-family:inherit}
+.recherche input{font-size:14px}
+.recherche input{width:100%}
+.recherche input{min-width:0}
+.filtres{display:flex}
+.filtres{flex-wrap:wrap}
+.filtres{gap:6px}
+.fp,.fr,.fs{height:40px}
+.fp,.fr{padding:0 14px}
+.fp,.fr,.fs{border-radius:999px}
+.fp,.fr,.fs{border:1px solid rgba(126,224,164,.28)}
+.fp,.fr,.fs{background:rgba(10,20,16,.92)}
+.fp,.fr,.fs{color:#e8f2ea}
+.fp,.fr{font-size:13px}
+.fp,.fr,.fs{font-family:inherit}
+.fp,.fr,.fs{cursor:pointer}
+.fp.actif{background:#7ee0a4}
+.fp.actif{color:#0a1410}
+.fp.actif{border-color:#7ee0a4}
+.fr{display:flex}
+.fr{align-items:center}
+.fr{gap:6px}
+.droite{display:flex}
+.droite{align-items:center}
+.droite{gap:6px}
+.droite{margin-left:auto}
+.fs{width:40px}
+.fs{padding:0}
+.fs{display:flex}
+.fs{align-items:center}
+.fs{justify-content:center}
+.vue{display:flex}
+.vue{gap:2px}
+.vue{padding:3px}
+.vue{border:1px solid rgba(126,224,164,.28)}
+.vue{border-radius:999px}
+.vue{background:rgba(10,20,16,.92)}
+.vue button{height:34px}
+.vue button{padding:0 12px}
+.vue button{border:none}
+.vue button{border-radius:999px}
+.vue button{background:none}
+.vue button{color:#e8f2ea}
+.vue button{font-size:13px}
+.vue button{font-family:inherit}
+.vue button{cursor:pointer}
+.vue button.actif{background:#7ee0a4}
+.vue button.actif{color:#0a1410}
+
+/* Panneaux de filtres */
+.pop{position:absolute}
+.pop{top:64px}
+.pop{left:12px}
+.pop{z-index:1100}
+.pop{width:300px}
+.pop{max-height:60%}
+.pop{overflow-y:auto}
+.pop{background:#f4f9f5}
+.pop{color:#0a1410}
+.pop{border-radius:16px}
+.pop{padding:14px}
+.pop{box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.pop[hidden]{display:none}
+.pop h3{font-family:'Archivo',sans-serif}
+.pop h3{font-weight:800}
+.pop h3{font-size:15px}
+.pop h3{margin:2px 0 10px}
+.pop input[type="search"]{width:100%}
+.pop input[type="search"]{height:36px}
+.pop input[type="search"]{box-sizing:border-box}
+.pop input[type="search"]{margin-bottom:8px}
+.pop input[type="search"]{padding:0 12px}
+.pop input[type="search"]{border-radius:999px}
+.pop input[type="search"]{border:1px solid rgba(10,20,16,.18)}
+.pop input[type="search"]{font-family:inherit}
+.pop .ligne{display:flex}
+.pop .ligne{align-items:center}
+.pop .ligne{gap:8px}
+.pop .ligne{padding:7px 4px}
+.pop .ligne{font-size:14px}
+.pop .ligne{cursor:pointer}
+.pop .ligne em{margin-left:auto}
+.pop .ligne em{font-style:normal}
+.pop .ligne em{font-size:12px}
+.pop .ligne em{color:#4f6a5c}
+.pop .ligne input{accent-color:#1f7a4d}
+.pastille{display:inline-block}
+.pastille{width:12px}
+.pastille{height:12px}
+.pastille{border-radius:4px}
+.pastille{flex:none}
+
+/* Pied de carte et bouton de fond */
+.pied{position:absolute}
+.pied{left:12px}
+.pied{bottom:12px}
+.pied{z-index:1000}
+.pied{display:flex}
+.pied{align-items:center}
+.pied{gap:12px}
+.pied{background:#0a1410}
+.pied{color:#e8f2ea}
+.pied{border:1px solid rgba(126,224,164,.35)}
+.pied{border-radius:999px}
+.pied{padding:6px 6px 6px 16px}
+.pied{font-size:13px}
+.pied{box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.compte{max-width:300px}
+.compte{white-space:nowrap}
+.compte{overflow:hidden}
+.compte{text-overflow:ellipsis}
+.bouton{display:inline-block}
+.bouton{background:#7ee0a4}
+.bouton{color:#0a1410}
+.bouton{font-weight:700}
+.bouton{font-size:14px}
+.bouton{padding:10px 18px}
+.bouton{border-radius:999px}
+.bouton{border:none}
+.bouton{text-decoration:none}
+.bouton{white-space:nowrap}
+.fond{position:absolute}
+.fond{right:12px}
+.fond{bottom:84px}
+.fond{z-index:1000}
+.fond{background:#0a1410}
+.fond{color:#e8f2ea}
+.fond{border:1px solid rgba(126,224,164,.28)}
+.fond{border-radius:999px}
+.fond{padding:8px 14px}
+.fond{font-size:13px}
+.fond{font-family:inherit}
+.fond{cursor:pointer}
+
+/* Fiche modale sur fond flouté */
+.voile{position:absolute}
+.voile{inset:0}
+.voile{z-index:2000}
+.voile{background:rgba(7,26,15,.45)}
+.voile{backdrop-filter:blur(8px)}
+.voile{-webkit-backdrop-filter:blur(8px)}
+.voile{display:flex}
+.voile{align-items:center}
+.voile{justify-content:center}
+.voile{padding:20px}
+.voile[hidden]{display:none}
+.modale{background:#f4f9f5}
+.modale{color:#0a1410}
+.modale{border-radius:18px}
+.modale{padding:30px 28px}
+.modale{max-width:440px}
+.modale{text-align:center}
+.modale{box-shadow:0 12px 48px rgba(14,31,23,.16)}
+.modale img{display:block}
+.modale img{height:26px}
+.modale img{width:auto}
+.modale img{margin:0 auto 18px}
+.modale p{font-size:18px}
+.modale p{font-weight:600}
+.modale p{line-height:1.5}
+.modale p{margin:0 0 22px}
+.modale .lien{background:none}
+.modale .lien{border:none}
+.modale .lien{color:#4f6a5c}
+.modale .lien{font-size:13px}
+.modale .lien{font-family:inherit}
+.modale .lien{text-decoration:underline}
+.modale .lien{margin-top:14px}
+.modale .lien{cursor:pointer}
+
+/* Cartes de la liste */
+.carte-t{display:flex}
+.carte-t{flex-direction:column}
+.carte-t{align-items:flex-start}
+.carte-t{gap:4px}
+.carte-t{width:100%}
+.carte-t{margin-bottom:8px}
+.carte-t{padding:12px 14px}
+.carte-t{background:#ffffff}
+.carte-t{border:1px solid rgba(10,20,16,.08)}
+.carte-t{border-radius:14px}
+.carte-t{color:#0a1410}
+.carte-t{font-family:inherit}
+.carte-t{text-align:left}
+.carte-t{cursor:pointer}
+.carte-t .id{font-family:'JetBrains Mono',monospace}
+.carte-t .id{font-size:11px}
+.carte-t .id{color:#4f6a5c}
+.carte-t .lieu{font-size:15px}
+.carte-t .lieu{font-weight:700}
+.carte-t .plaque{font-family:'JetBrains Mono',monospace}
+.carte-t .plaque{font-size:10.5px}
+.carte-t .plaque{padding:3px 7px}
+.carte-t .plaque{border-radius:5px}
+.carte-t .plaque{color:#0a1410}
+.carte-t .plaque{display:inline-block}
+.carte-t .surf{font-size:13px}
+.carte-t .prix{font-size:13px}
+.carte-t .prix{font-weight:600}
+.carte-t .prix{color:#1f7a4d}
+
+.note{font-size:12px}
+.note{color:#9cb3a3}
+.note{margin-top:18px}
+
+.leaflet-container{font-family:'Inter Tight',system-ui,sans-serif}
+
+@media (max-width:820px){.gf{height:78vh}}
+@media (max-width:820px){.liste{width:100%}}
+@media (max-width:820px){.recherche{width:100%}}
+@media (max-width:820px){.droite{margin-left:0}}
+@media (max-width:820px){.pop{width:calc(100% - 24px)}}
+@media (max-width:820px){h1{font-size:22px}}
+.pop .ligne[hidden]{display:none}
