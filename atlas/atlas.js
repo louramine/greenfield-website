@@ -1,305 +1,326 @@
 // Greenfield Atlas, mode découverte uniquement (site public, sans jeton).
 // Données : fonction Supabase atlas_decouverte (voir supabase/atlas-decouverte.sql).
 // Nécessite Leaflet (window.L), chargé avant ce fichier.
+// Un clic sur un terrain n'ouvre pas de fiche : il affiche l'invitation à prendre rendez-vous sur la carte floutée.
 (function () {
 'use strict'
 
 const SUPA_URL = 'https://hjscwsybbcjpditudssq.supabase.co'
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhqc2N3c3liYmNqcGRpdHVkc3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTQ5MjUsImV4cCI6MjA5MTgzMDkyNX0.OccaI1Fw16ldu_PMElJvLyz7b-2EWmmXHeEEyPxeC2w'
-const CASABLANCA = [33.5731, -7.5898]
-const ZOOM_CASABLANCA = 12
+const CASABLANCA = [33.56, -7.62]
+const ZOOM = 12
 
-const ZONES = {
-  A: { l: 'Zone A (immeubles)', c: '#78d6cb' },
-  B: { l: 'Zone B et BT', c: '#7ee0a4' },
-  C: { l: 'Zone C', c: '#c3b2ff' },
-  D: { l: 'Zone D (villas)', c: '#cde88f' },
-  E: { l: 'Zone E', c: '#9fcaff' },
-  I: { l: 'Industriel (I)', c: '#f2b860' },
-  R: { l: 'Rural, agricole (R)', c: '#e2cf9e' },
-  X: { l: 'Autres ou non renseigné', c: '#d3dcd6' }
+const FAM = [
+  { k: 'A', l: 'Zone A (immeubles)', col: '#78d6cb' },
+  { k: 'B', l: 'Zone B et BT', col: '#7ee0a4' },
+  { k: 'C', l: 'Zone C', col: '#c3b2ff' },
+  { k: 'D', l: 'Zone D (villas)', col: '#cde88f' },
+  { k: 'E', l: 'Zone E', col: '#9fcaff' },
+  { k: 'I', l: 'Industriel (I)', col: '#f2b860' },
+  { k: 'R', l: 'Rural, agricole (R)', col: '#e2cf9e' },
+  { k: 'X', l: 'Autres ou non renseigné', col: '#d3dcd6' }
+]
+const FAMC = {}
+FAM.forEach(f => { FAMC[f.k] = f })
+const fam = z => {
+  const c = String(z ?? '').trim().charAt(0).toUpperCase()
+  return FAMC[c] ? c : 'X'
 }
 
-const PRIX = [
-  { k: 'p1', l: 'Moins de 1 000 MAD le m²' },
-  { k: 'p2', l: '1 000 à 3 000 MAD le m²' },
-  { k: 'p3', l: '3 000 à 10 000 MAD le m²' },
-  { k: 'p4', l: '10 000 MAD le m² et plus' },
-  { k: 'pn', l: 'Prix sur demande' }
-]
-const SURFACE = [
-  { k: 's1', l: 'Moins de 1 000 m²' },
-  { k: 's2', l: '1 000 m² à 1 ha' },
-  { k: 's3', l: '1 ha à 5 ha' },
-  { k: 's4', l: '5 ha et plus' },
-  { k: 'sn', l: 'Superficie non renseignée' }
-]
-const LIBELLES = { prix: 'Prix', surface: 'Superficie', zones: 'Zones', zonage: 'Zonage' }
+const PRE = {
+  p: [['Moins de 10 MDH', null, 10], ['10 à 30 MDH', 10, 30], ['30 à 100 MDH', 30, 100], ['Plus de 100 MDH', 100, null]],
+  s: [['Moins de 0,5 ha', null, 0.5], ['0,5 à 2 ha', 0.5, 2], ['2 à 10 ha', 2, 10], ['Plus de 10 ha', 10, null]]
+}
+const LABEL = { p: 'Prix', s: 'Superficie', q: 'Zones', z: 'Zonage' }
 
-const F = { texte: '', prix: new Set(), surface: new Set(), zones: new Set(), zonage: new Set() }
-let TOUS = []
-let carte = null
-let couche = null
-let imagerie = null
-let plan = null
-let satellite = true
-let panneau = null
-
-const $ = s => document.querySelector(s)
-const $$ = s => Array.from(document.querySelectorAll(s))
-const gf = $('#gf')
-const pop = $('#pop')
-const liste = $('#liste')
-const compte = $('#compte')
-const voile = $('#voile')
-
+const $ = id => document.getElementById(id)
+const root = $('atlas')
+const pop = $('atl-pop')
+const txt = $('atl-txt')
 const esc = s => {
   const d = document.createElement('div')
   d.textContent = String(s ?? '')
-  return d.innerHTML
+  return d.innerHTML.replace(/"/g, '”')
 }
-const fmt = n => Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ')
-const dec1 = n => String(Math.round(n * 10) / 10).replace('.', ',')
-const surfaceTxt = s => (s >= 10000 ? dec1(s / 10000) + ' ha' : fmt(s) + ' m²')
-const zone = z => {
-  const c = String(z ?? '').trim().charAt(0).toUpperCase()
-  return ZONES[c] ? c : 'X'
+const nb = n => String(n).replace('.', ',')
+const num = v => {
+  const x = parseFloat(String(v).replace(/\s/g, '').replace(',', '.'))
+  return isFinite(x) && x >= 0 ? x : null
 }
-const moyennePrix = t => (t.pmlo && t.pmhi ? (t.pmlo + t.pmhi) / 2 : null)
-const clePrix = t => {
-  const m = moyennePrix(t)
-  if (m === null) return 'pn'
-  if (m < 1000) return 'p1'
-  if (m < 3000) return 'p2'
-  if (m < 10000) return 'p3'
-  return 'p4'
+const hasR = r => r[0] != null ? true : r[1] != null
+const rangeTxt = (r, u) => {
+  if (r[0] != null && r[1] != null) return nb(r[0]) + ' à ' + nb(r[1]) + ' ' + u
+  return r[0] != null ? 'Plus de ' + nb(r[0]) + ' ' + u : 'Moins de ' + nb(r[1]) + ' ' + u
 }
-const cleSurface = t => {
-  if (!t.s) return 'sn'
-  if (t.s < 1000) return 's1'
-  if (t.s < 10000) return 's2'
-  if (t.s < 50000) return 's3'
-  return 's4'
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const numerique = k => k === 'p' ? true : k === 's'
+
+// État des filtres
+const F = { p: [null, null], pnd: false, s: [null, null], q: new Set(), z: new Set() }
+let D = []
+let popK = null
+
+// Carte, centrée sur Casablanca
+const map = L.map('atl-map', { zoomControl: false }).setView(CASABLANCA, ZOOM)
+L.control.zoom({ position: 'bottomright' }).addTo(map)
+const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+const sat = L.layerGroup([
+  L.tileLayer(esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics' }),
+  L.tileLayer(esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 }),
+  L.tileLayer(esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+]).addTo(map)
+const plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© OpenStreetMap © CARTO' })
+const couche = L.featureGroup().addTo(map)
+let fond = 'sat'
+
+$('atl-base').addEventListener('click', () => {
+  if (fond === 'sat') {
+    map.removeLayer(sat)
+    plan.addTo(map)
+    fond = 'plan'
+  } else {
+    map.removeLayer(plan)
+    sat.addTo(map)
+    fond = 'sat'
+  }
+  $('atl-base').title = fond === 'sat' ? 'Fond actuel : satellite' : 'Fond actuel : plan'
+})
+
+// Invitation à prendre rendez-vous, sur la carte floutée
+let retour = null
+const ouvrir = () => {
+  closePop()
+  retour = document.activeElement
+  root.classList.add('locked')
+  $('atl-cta').focus()
 }
-const localisation = t => (t.q ? esc(t.q) : 'Localisation sur demande')
-const superficie = t => (t.s ? surfaceTxt(t.s) : 'Superficie sur demande')
-const prixTxt = t => {
-  const lignes = []
-  if (t.pmlo && t.pmhi) lignes.push(fmt(t.pmlo) + ' à ' + fmt(t.pmhi) + ' MAD le m²')
-  if (t.pflo && t.pfhi) lignes.push(dec1(t.pflo) + ' à ' + dec1(t.pfhi) + ' MDH')
-  return lignes.length ? lignes.join(', ') : 'Prix sur demande'
+const fermer = () => {
+  root.classList.remove('locked')
+  if (retour && retour.focus) retour.focus()
+}
+$('atl-modal').addEventListener('click', e => {
+  if (e.target === $('atl-modal')) return fermer()
+  if (e.target.closest('[data-close]')) fermer()
+})
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
+  if (root.classList.contains('locked')) fermer()
+  else closePop()
+})
+
+// Filtres
+const visible = t => {
+  const q = norm(txt.value).trim()
+  if (q && !norm([t.q, t.z, FAMC[fam(t.z)].l].join(' ')).includes(q)) return false
+  if (F.pnd && t.pflo) return false
+  if (hasR(F.p)) {
+    if (!t.pflo) return false
+    if (F.p[0] != null && t.pfhi < F.p[0]) return false
+    if (F.p[1] != null && t.pflo > F.p[1]) return false
+  }
+  if (hasR(F.s)) {
+    if (!t.s) return false
+    const h = t.s / 10000
+    if (F.s[0] != null && h < F.s[0]) return false
+    if (F.s[1] != null && h > F.s[1]) return false
+  }
+  if (F.q.size && !F.q.has(t.q)) return false
+  if (F.z.size && !F.z.has(fam(t.z))) return false
+  return true
 }
 
-const charger = () => fetch(SUPA_URL + '/rest/v1/rpc/atlas_decouverte', {
+const dessiner = t => {
+  const col = FAMC[fam(t.z)].col
+  if (t.g && t.g.length) {
+    L.polygon(t.g, { color: col, weight: 2.5, dashArray: '6 5', fillColor: col, fillOpacity: 0.25 }).on('click', ouvrir).addTo(couche)
+  }
+  if (t.lat != null && t.lng != null) {
+    L.circleMarker([t.lat, t.lng], { radius: 6, color: '#fff', weight: 1.5, fillColor: col, fillOpacity: 1 }).on('click', ouvrir).addTo(couche)
+  }
+}
+
+const setBtn = (k, on, label) => {
+  const b = document.querySelector('.atl-fp[data-p="' + k + '"]')
+  b.classList.toggle('on', on)
+  b.textContent = label
+}
+
+function render () {
+  const vus = D.filter(visible)
+  couche.clearLayers()
+  vus.forEach(dessiner)
+  const pOn = F.pnd ? true : hasR(F.p)
+  setBtn('p', pOn, F.pnd ? 'Prix sur demande' : (hasR(F.p) ? rangeTxt(F.p, 'MDH') : LABEL.p))
+  setBtn('s', hasR(F.s), hasR(F.s) ? rangeTxt(F.s, 'ha') : LABEL.s)
+  setBtn('q', F.q.size > 0, F.q.size === 1 ? [...F.q][0] : (F.q.size ? 'Zones (' + F.q.size + ')' : LABEL.q))
+  setBtn('z', F.z.size > 0, F.z.size === 1 ? FAMC[[...F.z][0]].l.replace(/ \(.*\)/, '') : (F.z.size ? 'Zonage (' + F.z.size + ')' : LABEL.z))
+  const actif = [txt.value.trim() !== '', pOn, hasR(F.s), F.q.size > 0, F.z.size > 0].some(Boolean)
+  $('atl-reset').classList.toggle('on', actif)
+  const n = vus.length
+  const base = n + (n > 1 ? ' terrains' : ' terrain')
+  $('atl-n').textContent = actif ? base + ' sur ' + D.length : base + ' en mode découverte'
+  $('atl-msg').textContent = D.length && !n ? 'Aucun terrain ne correspond à ces filtres.' : ''
+  const see = pop.querySelector('[data-a="see"]')
+  if (see) see.textContent = 'Voir ' + base
+}
+
+// Menus déroulants de la barre de filtres
+function closePop () {
+  popK = null
+  pop.classList.remove('on')
+  document.querySelectorAll('.atl-fp').forEach(b => b.classList.remove('open'))
+}
+
+const popBody = k => {
+  if (numerique(k)) {
+    const r = F[k]
+    const u = k === 'p' ? 'MDH' : 'ha'
+    const pre = PRE[k].map((x, i) => '<button type="button" data-pre="' + i + '" class="' + (!F.pnd && hasR(r) && r[0] === x[1] && r[1] === x[2] ? 'on' : '') + '">' + x[0] + '</button>').join('') +
+      (k === 'p' ? '<button type="button" data-pre="nd" class="' + (F.pnd ? 'on' : '') + '">Sur demande</button>' : '')
+    return '<div class="atl-ph">' + (k === 'p' ? 'Prix global' : 'Superficie') + '</div><div class="atl-pre">' + pre + '</div>' +
+      '<div class="atl-ph">Ou une fourchette</div><div class="atl-rg">' +
+      '<label>Min (' + u + ')<input inputmode="decimal" data-r="0" placeholder="Pas de min" value="' + (r[0] != null ? nb(r[0]) : '') + '"></label>' +
+      '<label>Max (' + u + ')<input inputmode="decimal" data-r="1" placeholder="Pas de max" value="' + (r[1] != null ? nb(r[1]) : '') + '"></label></div>'
+  }
+  if (k === 'q') {
+    const n = {}
+    D.forEach(t => { if (t.q) n[t.q] = (n[t.q] ?? 0) + 1 })
+    const qs = Object.keys(n).sort((a, b) => a.localeCompare(b, 'fr'))
+    return '<input type="search" class="atl-pq" placeholder="Chercher une zone" aria-label="Chercher une zone">' +
+      '<div class="atl-opts">' + qs.map(q => '<label class="atl-opt" data-t="' + esc(norm(q)) + '"><input type="checkbox" value="' + esc(q) + '"' + (F.q.has(q) ? ' checked' : '') + '><span>' + esc(q) + '</span><small>' + n[q] + '</small></label>').join('') + '</div>'
+  }
+  const n = {}
+  D.forEach(t => { n[fam(t.z)] = (n[fam(t.z)] ?? 0) + 1 })
+  return '<div class="atl-ph">Aucun choix : tous les zonages</div><div class="atl-opts">' + FAM.filter(f => n[f.k]).map(f => '<label class="atl-opt"><input type="checkbox" value="' + f.k + '"' + (F.z.has(f.k) ? ' checked' : '') + '><i style="background:' + f.col + '"></i><span>' + f.l + '</span><small>' + n[f.k] + '</small></label>').join('') + '</div>'
+}
+
+const wire = k => {
+  const body = pop.querySelector('.atl-pb')
+  if (numerique(k)) {
+    body.querySelectorAll('[data-pre]').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.pre === 'nd') {
+        F.pnd = !F.pnd
+        F.p = [null, null]
+      } else {
+        const x = PRE[k][Number(b.dataset.pre)]
+        const same = !F.pnd && hasR(F[k]) && F[k][0] === x[1] && F[k][1] === x[2]
+        F[k] = same ? [null, null] : [x[1], x[2]]
+        if (k === 'p') F.pnd = false
+      }
+      body.innerHTML = popBody(k)
+      wire(k)
+      render()
+    }))
+    body.querySelectorAll('[data-r]').forEach(inp => inp.addEventListener('input', () => {
+      const r = [num(body.querySelector('[data-r="0"]').value), num(body.querySelector('[data-r="1"]').value)]
+      F[k] = r
+      if (k === 'p') F.pnd = false
+      body.querySelectorAll('[data-pre]').forEach(b => {
+        const x = b.dataset.pre === 'nd' ? null : PRE[k][Number(b.dataset.pre)]
+        b.classList.toggle('on', x ? (hasR(r) && r[0] === x[1] && r[1] === x[2]) : false)
+      })
+      render()
+    }))
+    return
+  }
+  const set = F[k]
+  body.querySelectorAll('input[type="checkbox"]').forEach(c => c.addEventListener('change', () => {
+    if (c.checked) set.add(c.value)
+    else set.delete(c.value)
+    render()
+  }))
+  const pq = body.querySelector('.atl-pq')
+  if (pq) {
+    pq.addEventListener('input', () => {
+      const v = norm(pq.value).trim()
+      body.querySelectorAll('.atl-opt').forEach(o => { o.style.display = o.dataset.t.includes(v) ? '' : 'none' })
+    })
+  }
+}
+
+const openPop = k => {
+  if (popK === k) return closePop()
+  popK = k
+  document.querySelectorAll('.atl-fp').forEach(b => b.classList.toggle('open', b.dataset.p === k))
+  pop.innerHTML = '<div class="atl-pb">' + popBody(k) + '</div><div class="atl-pf"><button type="button" class="btn btn-ghost" data-a="clr">Effacer</button><button type="button" class="btn btn-primary" data-a="see"></button></div>'
+  pop.classList.add('on')
+  const box = root.getBoundingClientRect()
+  const bt = document.querySelector('.atl-fp[data-p="' + k + '"]').getBoundingClientRect()
+  const top = bt.bottom - box.top + 8
+  pop.style.top = top + 'px'
+  pop.style.maxHeight = (box.height - top - 12) + 'px'
+  pop.style.left = Math.max(8, Math.min(bt.left - box.left, box.width - pop.offsetWidth - 8)) + 'px'
+  wire(k)
+  render()
+}
+
+document.querySelectorAll('.atl-fp').forEach(b => b.addEventListener('click', () => openPop(b.dataset.p)))
+pop.addEventListener('click', e => {
+  const a = e.target.closest('[data-a]')
+  if (!a) return
+  if (a.dataset.a === 'see') return closePop()
+  const k = popK
+  if (k === 'p') {
+    F.p = [null, null]
+    F.pnd = false
+  } else if (k === 's') F.s = [null, null]
+  else F[k].clear()
+  pop.querySelector('.atl-pb').innerHTML = popBody(k)
+  wire(k)
+  render()
+})
+document.addEventListener('mousedown', e => {
+  if (!popK) return
+  if (e.target.closest('.atl-pop') ?? e.target.closest('.atl-fp')) return
+  closePop()
+})
+txt.addEventListener('input', render)
+$('atl-reset').addEventListener('click', () => {
+  txt.value = ''
+  F.p = [null, null]
+  F.pnd = false
+  F.s = [null, null]
+  F.q.clear()
+  F.z.clear()
+  closePop()
+  render()
+  map.setView(CASABLANCA, ZOOM)
+})
+
+// Plein écran
+const fsBtn = $('atl-fs')
+const fsEl = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null
+fsBtn.addEventListener('click', () => {
+  if (fsEl()) {
+    if (document.exitFullscreen) document.exitFullscreen()
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+  } else if (root.requestFullscreen) root.requestFullscreen()
+  else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen()
+})
+const fsPaint = () => {
+  const on = fsEl() === root
+  fsBtn.classList.toggle('on', on)
+  fsBtn.setAttribute('aria-label', on ? 'Quitter le plein écran' : 'Plein écran')
+  fsBtn.title = on ? 'Quitter le plein écran' : 'Plein écran'
+  setTimeout(() => map.invalidateSize(), 150)
+}
+document.addEventListener('fullscreenchange', fsPaint)
+document.addEventListener('webkitfullscreenchange', fsPaint)
+window.addEventListener('resize', () => { if (popK) closePop() })
+
+// Chargement
+fetch(SUPA_URL + '/rest/v1/rpc/atlas_decouverte', {
   method: 'POST',
   headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
   body: '{}'
 }).then(r => {
   if (!r.ok) throw new Error('HTTP ' + r.status)
   return r.json()
+}).then(terrains => {
+  D = terrains
+  render()
+}).catch(() => {
+  $('atl-n').textContent = 'Carte indisponible'
+  $('atl-msg').textContent = 'La carte est momentanément indisponible. Réessayez dans quelques instants.'
 })
-
-// Filtres
-const passe = t => {
-  const q = F.texte.trim().toLowerCase()
-  if (q) {
-    const texte = ((t.q ?? '') + ' ' + t.id).toLowerCase()
-    if (!texte.includes(q)) return false
-  }
-  if (F.prix.size && !F.prix.has(clePrix(t))) return false
-  if (F.surface.size && !F.surface.has(cleSurface(t))) return false
-  if (F.zones.size && !F.zones.has(t.q ?? '')) return false
-  if (F.zonage.size && !F.zonage.has(zone(t.z))) return false
-  return true
-}
-const quartiers = () => {
-  const m = new Map()
-  TOUS.forEach(t => { if (t.q) m.set(t.q, (m.get(t.q) ?? 0) + 1) })
-  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr'))
-}
-const ensembles = () => ({ prix: F.prix, surface: F.surface, zones: F.zones, zonage: F.zonage })
-
-// Carte
-const dessiner = t => {
-  const z = ZONES[zone(t.z)]
-  const clic = () => ouvrirModale()
-  if (t.g && t.g.length) {
-    L.polygon(t.g, { color: z.c, weight: 2, dashArray: '6 5', fillColor: z.c, fillOpacity: 0.25 }).on('click', clic).addTo(couche)
-  } else if (t.lat != null && t.lng != null) {
-    L.circleMarker([t.lat, t.lng], { radius: 6, color: '#fff', weight: 1.5, fillColor: z.c, fillOpacity: 1 }).on('click', clic).addTo(couche)
-  }
-}
-
-const ligneListe = t => '<button type="button" class="carte-t" data-id="' + esc(t.id) + '">' +
-  '<span class="id">' + esc(t.id) + '</span>' +
-  '<span class="lieu">' + localisation(t) + '</span>' +
-  '<span class="plaque" style="background:' + ZONES[zone(t.z)].c + '">Zone ' + zone(t.z) + '</span>' +
-  '<span class="surf">' + superficie(t) + '</span>' +
-  '<span class="prix">' + esc(prixTxt(t)) + '</span>' +
-  '</button>'
-
-const majBoutons = () => {
-  $$('.fp').forEach(b => {
-    const p = b.dataset.p
-    const n = ensembles()[p].size
-    b.textContent = LIBELLES[p] + (n ? ' (' + n + ')' : '')
-    b.classList.toggle('actif', n > 0)
-  })
-}
-
-const rafraichir = () => {
-  const ok = TOUS.filter(passe)
-  couche.clearLayers()
-  ok.forEach(dessiner)
-  liste.innerHTML = ok.length ? ok.map(ligneListe).join('') : '<p class="vide">Aucun terrain ne correspond à ces critères.</p>'
-  const n = ok.length
-  compte.textContent = n === 0 ? 'Aucun terrain pour ces critères' : (n > 1 ? n + ' terrains disponibles' : n + ' terrain disponible') + ' en découverte'
-  majBoutons()
-}
-
-// Panneaux de filtres
-const ligne = (groupe, valeur, html, coche) => '<label class="ligne"><input type="checkbox" data-g="' + groupe + '" data-v="' + encodeURIComponent(valeur) + '"' + (coche ? ' checked' : '') + '><span>' + html + '</span></label>'
-
-const contenuPanneau = p => {
-  if (p === 'zones') {
-    const items = quartiers().map(([nom, n]) => ligne('zones', nom, esc(nom) + ' <em>' + n + '</em>', F.zones.has(nom))).join('')
-    return '<h3>Zones</h3><input type="search" id="filtre-zones" placeholder="Chercher une zone" aria-label="Chercher une zone"><div class="items">' + items + '</div>'
-  }
-  if (p === 'zonage') {
-    const items = Object.keys(ZONES).map(k => ligne('zonage', k, '<i class="pastille" style="background:' + ZONES[k].c + '"></i>' + esc(ZONES[k].l), F.zonage.has(k))).join('')
-    return '<h3>Zonage</h3>' + items
-  }
-  if (p === 'prix') {
-    return '<h3>Prix au m²</h3>' + PRIX.map(x => ligne('prix', x.k, esc(x.l), F.prix.has(x.k))).join('')
-  }
-  return '<h3>Superficie</h3>' + SURFACE.map(x => ligne('surface', x.k, esc(x.l), F.surface.has(x.k))).join('')
-}
-
-const fermerPanneau = () => {
-  panneau = null
-  pop.hidden = true
-  $$('.fp').forEach(b => b.setAttribute('aria-expanded', 'false'))
-}
-
-const ouvrirPanneau = (p, bouton) => {
-  if (panneau === p) return fermerPanneau()
-  panneau = p
-  pop.innerHTML = contenuPanneau(p)
-  const decalage = bouton.getBoundingClientRect().left - gf.getBoundingClientRect().left
-  pop.style.left = Math.max(12, decalage) + 'px'
-  pop.hidden = false
-  $$('.fp').forEach(b => b.setAttribute('aria-expanded', b === bouton ? 'true' : 'false'))
-  const recherche = pop.querySelector('#filtre-zones')
-  if (recherche) {
-    recherche.addEventListener('input', () => {
-      const q = recherche.value.trim().toLowerCase()
-      pop.querySelectorAll('.items .ligne').forEach(l => { l.hidden = !l.textContent.toLowerCase().includes(q) })
-    })
-  }
-}
-
-// Fiche modale
-const ouvrirModale = () => {
-  voile.hidden = false
-  $('#fermer').focus()
-}
-const fermerModale = () => {
-  voile.hidden = true
-}
-
-// Vues et fond de carte
-const setVue = mode => {
-  gf.dataset.vue = mode
-  $$('.vue button').forEach(b => b.classList.toggle('actif', b.dataset.mode === mode))
-  setTimeout(() => carte.invalidateSize(), 60)
-}
-
-const basculerFond = () => {
-  if (satellite) {
-    carte.removeLayer(imagerie)
-    carte.addLayer(plan)
-    $('#fond').textContent = 'Satellite'
-  } else {
-    carte.removeLayer(plan)
-    carte.addLayer(imagerie)
-    $('#fond').textContent = 'Plan'
-  }
-  satellite = !satellite
-}
-
-const reinitialiser = () => {
-  F.texte = ''
-  F.prix.clear()
-  F.surface.clear()
-  F.zones.clear()
-  F.zonage.clear()
-  $('#recherche').value = ''
-  fermerPanneau()
-  carte.setView(CASABLANCA, ZOOM_CASABLANCA)
-  rafraichir()
-}
-
-const lier = () => {
-  $('#recherche').addEventListener('input', e => {
-    F.texte = e.target.value
-    rafraichir()
-  })
-  $$('.fp').forEach(b => b.addEventListener('click', e => {
-    e.stopPropagation()
-    ouvrirPanneau(b.dataset.p, b)
-  }))
-  pop.addEventListener('change', e => {
-    const t = e.target
-    if (!t.dataset.g) return
-    const v = decodeURIComponent(t.dataset.v)
-    const ens = ensembles()[t.dataset.g]
-    if (t.checked) ens.add(v)
-    else ens.delete(v)
-    rafraichir()
-  })
-  pop.addEventListener('click', e => e.stopPropagation())
-  document.addEventListener('click', () => { if (panneau) fermerPanneau() })
-  $('#reinit').addEventListener('click', reinitialiser)
-  $$('.vue button').forEach(b => b.addEventListener('click', () => setVue(b.dataset.mode)))
-  $('#plein').addEventListener('click', () => {
-    if (document.fullscreenElement) document.exitFullscreen()
-    else if (gf.requestFullscreen) gf.requestFullscreen()
-  })
-  document.addEventListener('fullscreenchange', () => setTimeout(() => carte.invalidateSize(), 150))
-  $('#fond').addEventListener('click', basculerFond)
-  liste.addEventListener('click', e => {
-    if (e.target.closest('.carte-t')) ouvrirModale()
-  })
-  voile.addEventListener('click', e => { if (e.target === voile) fermerModale() })
-  $('#fermer').addEventListener('click', fermerModale)
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      fermerModale()
-      fermerPanneau()
-    }
-  })
-}
-
-const init = () => {
-  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/'
-  carte = L.map('carte', { zoomControl: false }).setView(CASABLANCA, ZOOM_CASABLANCA)
-  L.control.zoom({ position: 'bottomright' }).addTo(carte)
-  imagerie = L.layerGroup([
-    L.tileLayer(esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics' }),
-    L.tileLayer(esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 }),
-    L.tileLayer(esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
-  ])
-  plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© OpenStreetMap © CARTO' })
-  imagerie.addTo(carte)
-  couche = L.featureGroup().addTo(carte)
-  lier()
-  charger().then(donnees => {
-    TOUS = donnees
-    rafraichir()
-  }).catch(() => {
-    compte.textContent = 'La carte est momentanément indisponible. Réessayez dans quelques instants.'
-  })
-}
-
-init()
 })()

@@ -2,78 +2,78 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0a1410">
-<title>Greenfield Atlas, mode découverte</title>
-<meta name="description" content="Greenfield Atlas : découvrez les terrains disponibles en mode découverte. Prenez rendez-vous pour les terrains off-market.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1f17">
+<title>Greenfield Atlas · La carte des terrains à Casablanca</title>
+<meta name="description" content="Greenfield Atlas : la carte des terrains disponibles à Casablanca et environs, en mode découverte. Prenez rendez-vous pour découvrir les terrains off-market pour votre prochain projet.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800..900&family=Inter+Tight:wght@400..700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="atlas.css">
 </head>
 <body>
-<section class="atlas" id="atlas">
-  <header class="entete">
-    <img class="logo" src="logo-greenfield.png" alt="Greenfield, exigez plus">
-    <div class="titre">
-      <h1>Greenfield Atlas</h1>
-      <p>Mode découverte</p>
-    </div>
-  </header>
+<nav class="nav" aria-label="Navigation principale">
+  <a class="nav-brand" href="https://greenfield.plus/" aria-label="Greenfield+, accueil">
+    <img src="logo-greenfield.png" alt="Greenfield+">
+    <span class="nav-tag">ATLAS</span>
+  </a>
+  <div class="nav-links">
+    <a href="https://greenfield.plus/#approche">Approche</a>
+    <a href="https://greenfield.plus/#produits">Produits</a>
+    <a href="https://greenfield.plus/#processus">Processus</a>
+    <a href="https://greenfield.plus/#temoignages">Références</a>
+    <a class="on" href="#atlas" aria-current="page">Atlas</a>
+    <a class="plus" href="https://greenfield.plus/#plus">Programme Plus</a>
+  </div>
+  <a class="btn btn-primary" data-rdv href="https://greenfield.plus/#contact">Prendre rendez-vous <span aria-hidden="true">→</span></a>
+</nav>
 
-  <div class="gf" id="gf" data-vue="carte">
-    <div class="barre">
-      <label class="recherche">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="recherche" type="search" placeholder="Rechercher un quartier ou une référence" aria-label="Rechercher un quartier ou une référence">
+<main class="atl" id="atlas">
+  <h1 class="sr">Greenfield Atlas, la carte des terrains en mode découverte</h1>
+  <div class="atl-map" id="atl-map" role="region" aria-label="Carte des terrains"></div>
+
+  <div class="atl-ui">
+    <div class="atl-fbar">
+      <label class="atl-srch">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input type="search" id="atl-txt" placeholder="Rechercher" aria-label="Rechercher une zone ou un zonage" autocomplete="off">
       </label>
-      <div class="filtres">
-        <button class="fp" data-p="prix" type="button">Prix</button>
-        <button class="fp" data-p="surface" type="button">Superficie</button>
-        <button class="fp" data-p="zones" type="button">Zones</button>
-        <button class="fp" data-p="zonage" type="button">Zonage</button>
-        <button class="fr" id="reinit" type="button">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-          Réinitialiser
-        </button>
-      </div>
-      <div class="droite">
-        <button class="fs" id="plein" type="button" aria-label="Plein écran">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-        </button>
-        <div class="vue" role="group" aria-label="Affichage">
-          <button type="button" data-mode="carte" class="actif">Carte</button>
-          <button type="button" data-mode="deux">Les deux</button>
-          <button type="button" data-mode="liste">Liste</button>
-        </div>
-      </div>
+      <button type="button" class="atl-fp" data-p="p">Prix</button>
+      <button type="button" class="atl-fp" data-p="s">Superficie</button>
+      <button type="button" class="atl-fp" data-p="q">Zones</button>
+      <button type="button" class="atl-fp" data-p="z">Zonage</button>
+      <button type="button" class="atl-fr" id="atl-reset">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        Réinitialiser
+      </button>
     </div>
-
-    <div class="pop" id="pop" hidden></div>
-
-    <div class="corps">
-      <div id="carte" class="carte" role="region" aria-label="Carte des terrains en mode découverte"></div>
-      <div class="liste" id="liste"></div>
+    <button type="button" class="atl-fs" id="atl-fs" title="Plein écran" aria-label="Plein écran">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+    <div class="atl-pop" id="atl-pop"></div>
+    <button type="button" class="atl-base" id="atl-base">Fond de carte</button>
+    <div class="atl-bar">
+      <span class="atl-n" id="atl-n">Chargement de la carte…</span>
+      <a class="btn btn-primary" data-rdv href="https://greenfield.plus/#contact">Prendre rendez-vous</a>
     </div>
+    <div class="atl-msg" id="atl-msg" role="status"></div>
+  </div>
 
-    <button class="fond" id="fond" type="button">Plan</button>
-
-    <div class="pied">
-      <span class="compte" id="compte">Chargement de la carte…</span>
-      <a class="bouton" href="#contact">Prendre rendez-vous</a>
-    </div>
-
-    <div class="voile" id="voile" hidden>
-      <div class="modale" role="dialog" aria-modal="true" aria-labelledby="modale-texte">
-        <img src="logo-greenfield.png" alt="Greenfield">
-        <p id="modale-texte">Prenez rendez-vous pour découvrir les terrains off-market pour votre prochain projet.</p>
-        <a class="bouton" href="#contact">Prendre rendez-vous</a>
-        <button class="lien" id="fermer" type="button">Fermer</button>
+  <div class="atl-modal" id="atl-modal" role="dialog" aria-modal="true" aria-labelledby="atl-modal-t">
+    <div class="atl-card">
+      <button type="button" class="atl-x" data-close aria-label="Fermer">×</button>
+      <img src="logo-greenfield.png" alt="Greenfield+">
+      <p class="atl-eyebrow">Greenfield Atlas · Off-market</p>
+      <h2 id="atl-modal-t">Prenez rendez-vous pour découvrir les terrains off-market pour votre prochain projet.</h2>
+      <p class="atl-sub">Les fiches détaillées (localisation exacte, superficie, zonage et prix) sont présentées en rendez-vous par l’équipe Greenfield.</p>
+      <div class="atl-acts">
+        <a class="btn btn-primary" id="atl-cta" data-rdv href="https://greenfield.plus/#contact">Prendre rendez-vous <span aria-hidden="true">→</span></a>
+        <button type="button" class="btn btn-ghost" data-close>Retour à la carte</button>
       </div>
     </div>
   </div>
-
-  <p class="note">Localisation et forme volontairement approximatives. Superficie et prix indiqués en fourchette. Les détails sont communiqués après engagement de confidentialité. Document non contractuel.</p>
-</section>
+</main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="atlas.js"></script>
 </body>
