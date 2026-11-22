@@ -100,5 +100,12 @@ s = une_fois(s, "cursor:'pointer', textTransform:'uppercase', display:'flex', ju
              'style du bouton')
 s = une_fois(s, "<span>{T('Transmettre le brief')}</span>",
              "<span>{busy ? GF_MOTS[gfLangue()].envoi : T('Transmettre le brief')}</span>", 'texte du bouton')
+MENTION = ("</form>\n          <p style={{fontSize:12.5, lineHeight:1.5, opacity:0.75, marginTop:14}}>"
+           "{({fr:'Vos informations servent uniquement à vous recontacter au sujet de votre demande.', "
+           "en:'Your details are only used to get back to you about your request.', "
+           "ar:'تُستعمل معلوماتكم فقط للتواصل معكم بخصوص طلبكم.'})[gfLangue()]} "
+           "<a href='/politique-de-confidentialite' style={{color:'inherit'}}>"
+           "{({fr:'Politique de confidentialité', en:'Privacy policy', ar:'سياسة الخصوصية'})[gfLangue()]}</a></p>")
+s = une_fois(s, '</form>', MENTION, 'mention sous le formulaire')
 ecrire(app, s)
 print('Formulaire de contact branche sur Supabase')
