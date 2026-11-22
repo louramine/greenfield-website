@@ -209,7 +209,11 @@ def construire(modele, titre, description, chemin_url, corps, index=True):
     s = couper(s, '<div class="gf-lang">', '</div>', garder_fin=False)
     s = s.replace(' aria-current="page"', '')
     i, j = entre(s, '<header class="hero">', '<div class="gf-links">')
-    return s[:i] + corps + s[j:]
+    s = s[:i] + corps + s[j:]
+    if '<time datetime="' in s:
+        i, j = entre(s, '<time datetime="', '</time>')
+        s = s[:i] + '<time datetime="2026-11-22">' + MAJ + s[j:]
+    return s
 
 
 modele = lire(os.path.join('public', 'vendre-mon-terrain.html'))
