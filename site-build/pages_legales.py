@@ -9,7 +9,7 @@ import os
 
 MAJ = '22 novembre 2026'
 
-# Informations de la societe a renseigner. Tant qu'un champ vaut None, il apparait surligne « a completer ».
+# Informations de la societe. Un champ qui vaut None n'est pas publie.
 SOCIETE = {
     'raison': None,
     'forme': None,
@@ -18,7 +18,6 @@ SOCIETE = {
     'ice': None,
     'if': None,
     'directeur': None,
-    'cndp': None,
 }
 
 
@@ -79,6 +78,27 @@ CONTACT = ('<a href="mailto:contact@greenfield.plus">contact@greenfield.plus</a>
            '<a href="tel:+212776250052" dir="ltr">+212 7 76 25 00 52</a>')
 
 
+def nom_societe():
+    return SOCIETE['raison'] + ', exerçant sous le nom Greenfield+' if SOCIETE['raison'] else 'Greenfield+'
+
+
+def lignes_editeur():
+    # Seuls les champs renseignes dans SOCIETE sont publies
+    v = SOCIETE
+    l = ['Nom : ' + nom_societe()]
+    if v['forme']:
+        l.append('Forme juridique : ' + v['forme'] + (', au capital de ' + v['capital'] if v['capital'] else ''))
+    l.append('Siège : ' + ADRESSE)
+    if v['rc']:
+        l.append('Registre de commerce : ' + v['rc'])
+    if v['ice']:
+        l.append('ICE : ' + v['ice'] + (' et identifiant fiscal : ' + v['if'] if v['if'] else ''))
+    if v['directeur']:
+        l.append('Directeur de la publication : ' + v['directeur'])
+    l.append('Contact : ' + CONTACT)
+    return l
+
+
 def confidentialite():
     hero = ('<header class="hero"><div class="kicker">Informations légales</div><h1 class="display">Politique de<br><em>confidentialité</em>.</h1>'
             '<p>Cette page explique quelles données personnelles Greenfield+ recueille sur greenfield.plus, pourquoi, '
@@ -87,10 +107,8 @@ def confidentialite():
             '<p class="gf-note">Dernière mise à jour : ' + MAJ + '.</p></header>')
     s = [
         section('Responsable', 'Qui traite vos données',
-                p('Le responsable du traitement est ' + champ('raison', 'raison sociale') + ', exerçant sous le nom Greenfield+, ' +
-                  ADRESSE + '. Vous pouvez nous joindre à ' + CONTACT + '.') +
-                p('Ce traitement a fait l’objet d’une déclaration auprès de la Commission nationale de contrôle de la protection '
-                  'des données à caractère personnel (CNDP) sous le numéro ' + champ('cndp', 'numéro de récépissé CNDP') + '.')),
+                p('Le responsable du traitement est ' + nom_societe() + ', ' +
+                  ADRESSE + '. Vous pouvez nous joindre à ' + CONTACT + '.')),
         section('Données', 'Les données recueillies',
                 liste([
                     '<strong>Formulaire de contact</strong> : nom et prénom, société, email, téléphone, type de recherche et le brief que vous rédigez.',
@@ -139,15 +157,7 @@ def mentions():
             '<p class="gf-note">Dernière mise à jour : ' + MAJ + '.</p></header>')
     s = [
         section('Éditeur', 'Éditeur du site',
-                liste([
-                    'Raison sociale : ' + champ('raison', 'raison sociale') + ', exerçant sous le nom Greenfield+',
-                    'Forme juridique et capital : ' + champ('forme', 'forme juridique') + ', au capital de ' + champ('capital', 'capital social'),
-                    'Siège : ' + ADRESSE,
-                    'Registre de commerce : ' + champ('rc', 'numéro RC et ville'),
-                    'ICE : ' + champ('ice', 'numéro ICE') + ' et identifiant fiscal : ' + champ('if', 'numéro IF'),
-                    'Directeur de la publication : ' + champ('directeur', 'nom du directeur de la publication'),
-                    'Contact : ' + CONTACT,
-                ])),
+                liste(lignes_editeur())),
         section('Hébergement', 'Hébergement',
                 p('Le site est hébergé par Vercel Inc., États-Unis (<a href="https://vercel.com" rel="noopener">vercel.com</a>). '
                   'Les données de la carte Atlas et des demandes de contact sont hébergées par Supabase Inc. '
